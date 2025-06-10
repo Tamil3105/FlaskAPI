@@ -6,17 +6,16 @@ import os
 
 app = Flask(__name__)
 
-# Connect to or create SQLite DB
+# Connect to SQLite DB
 DB_NAME = "fitness.db"
 conn = sqlite3.connect(DB_NAME, check_same_thread=False)
 cursor = conn.cursor()
 
-# Create tables only if they don't exist
+# Create tables
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS classes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT
-
+    name TEXT
 )
 """)
 
@@ -28,17 +27,18 @@ CREATE TABLE IF NOT EXISTS bookings (
     client_email TEXT
 )
 """)
+conn.commit()
 
-# Insert one sample class (only if table is empty)
+# Insert sample class if empty
 cursor.execute("SELECT COUNT(*) FROM classes")
 if cursor.fetchone()[0] == 0:
     cursor.execute("INSERT INTO classes (name) VALUES ('Yoga')")
     conn.commit()
 
-# Set timezone
+# Timezone setup
 timezone = pytz.timezone('Asia/Kolkata')
 
-# In-memory fitness class schedule
+# In-memory schedule
 fitness_classes = {
     "1": {
         "name": "Yoga",
@@ -81,9 +81,7 @@ def get_classes():
         })
     return jsonify(class_list)
 
-
 # POST /classes
-
 @app.route('/classes', methods=['POST'])
 def add_class():
     data = request.json
@@ -114,23 +112,6 @@ def add_class():
 
     return jsonify({"message": "Class added successfully", "class_id": class_id}), 201
 
-# GET /bookings?email=...
-@app.route('/bookings', methods=['GET'])
-def get_bookings():
-    email = request.args.get("email")
-    if not email:
-        return jsonify({"error": "Email required"}), 400
-
-    cursor.execute("SELECT class_id, client_name, client_email FROM bookings WHERE client_email = ?", (email,))
-    results = cursor.fetchall()
-
-    bookings_list = [
-        {"class_id": row[0], "client_name": row[1], "client_email": row[2]}
-        for row in results
-    ]
-
-    return jsonify(bookings_list)
-
 # POST /book
 @app.route('/book', methods=['POST'])
 def book_class():
@@ -151,18 +132,31 @@ def book_class():
 
     cls["slots"] -= 1
 
-    # Insert booking into SQLite
+    # ✅ Insert booking into DB
     cursor.execute("""
-CREATE TABLE IF NOT EXISTS bookings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    class_id TEXT,
-    client_name TEXT,
-    client_email TEXT
-)
-""")
+    INSERT INTO bookings (class_id, client_name, client_email)
+    VALUES (?, ?, ?)
+    """, (class_id, name, email))
     conn.commit()
 
     return jsonify({"message": "Booking successful"})
+
+# GET /bookings?client_email=someone@example.com
+@app.route('/bookings', methods=['GET'])
+def get_bookings():
+    email = request.args.get("client_email")
+    if not email:
+        return jsonify({"error": "Email required"}), 400
+
+    cursor.execute("SELECT class_id, client_name, client_email FROM bookings WHERE client_email = ?", (email,))
+    results = cursor.fetchall()
+
+    bookings_list = [
+        {"class_id": row[0], "client_name": row[1], "client_email": row[2]}
+        for row in results
+    ]
+
+    return jsonify(bookings_list)
 
 # Run app
 if __name__ == '__main__':
