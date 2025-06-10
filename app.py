@@ -15,7 +15,10 @@ cursor = conn.cursor()
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS classes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT
+    name TEXT,
+    instructor TEXT,
+    datetime TEXT,
+    slots INTEGER
 )
 """)
 
@@ -80,37 +83,6 @@ def get_classes():
             "slots": details["slots"]
         })
     return jsonify(class_list)
-
-# POST /classes
-@app.route('/classes', methods=['POST'])
-def add_class():
-    data = request.json
-    name = data.get("name")
-    instructor = data.get("instructor")
-    datetime_str = data.get("datetime")
-    slots = data.get("slots")
-
-    if not all([name, instructor, datetime_str, slots]):
-        return jsonify({"error": "Missing required fields"}), 400
-
-    try:
-        class_datetime = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
-        class_datetime = timezone.localize(class_datetime)
-    except ValueError:
-        return jsonify({"error": "Invalid datetime format, use YYYY-MM-DD HH:MM"}), 400
-
-    cursor.execute("INSERT INTO classes (name) VALUES (?)", (name,))
-    conn.commit()
-    class_id = str(cursor.lastrowid)
-
-    fitness_classes[class_id] = {
-        "name": name,
-        "datetime": class_datetime,
-        "instructor": instructor,
-        "slots": int(slots)
-    }
-
-    return jsonify({"message": "Class added successfully", "class_id": class_id}), 201
 
 # POST /book
 @app.route('/book', methods=['POST'])
