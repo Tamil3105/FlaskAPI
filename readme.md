@@ -33,4 +33,65 @@
 ├── app.py # Main Flask application
 ├── fitness.db # SQLite database (auto-created)
 ├── venv/ # Python virtual environment (optional)
-└── README.md # Project documentation
+└── README.md # Project documentation.
+
+
+---
+
+## Setup Instructions
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Tamil3105/FlaskAPI.git
+cd FlaskAPI
+
+## Create a Virtual Environment
+
+python -m venv venv
+venv\Scripts\activate
+
+#Install Required Packages
+
+*pip install flask pytz
+
+# Run the Flask App
+
+python app.py
+The API will run at: http://localhost:5000
+
+#API Endpoints & Examples
+
+#GET /classes
+Returns a list of available fitness classes.
+GET /classes?tz=Asia/Kolkata
+
+#POST /classes
+
+#Add a new fitness class.
+POST /classes
+Content-Type: application/json
+{
+  "name": "Pilates",
+  "instructor": "Rita",
+  "datetime": "2025-06-15 09:00",
+  "slots": 6
+}
+
+#POST /book
+
+#Book a class by providing client details and class ID.
+
+POST /book
+Content-Type: application/json
+{
+  "class_id": "1",
+  "client_name": "John Doe",
+  "client_email": "john@example.com"
+}
+
+#GET /bookings
+
+#Fetch all bookings made by a specific client using their email.
+
+GET /bookings?client_email=john@example.com
